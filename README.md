@@ -2,7 +2,7 @@
 
 A production-ready deployment of [HKUDS/LightRAG](https://github.com/HKUDS/LightRAG) on AWS EC2 using Terraform infrastructure-as-code, S3-based graph persistence, AWS SSM Parameter Store for secrets management, GitHub Actions CI/CD via OIDC, and end-to-end Playwright smoke tests.
 
-This project enables a hiring engineer to understand, deploy, and demo the full RAG pipeline in under 30 minutes.
+This project deploys a production-ready LightRAG RAG pipeline on AWS EC2, with Terraform IaC, GitHub Actions CI/CD, and end-to-end smoke tests.
 
 ## Architecture
 
