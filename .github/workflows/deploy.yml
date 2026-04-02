@@ -45,8 +45,14 @@ jobs:
       - name: Fetch image digest
         id: digest
         run: |
-          echo "DIGEST=$(docker manifest inspect ghcr.io/hkuds/lightrag:latest --format '{{.Digest}}')" >> $GITHUB_OUTPUT
-          echo "Full image: ghcr.io/hkuds/lightrag@$(docker manifest inspect ghcr.io/hkuds/lightrag:latest --format '{{.Digest}}')"
+          docker pull ghcr.io/hkuds/lightrag:latest
+          DIGEST=$(docker inspect ghcr.io/hkuds/lightrag:latest --format '{{index .RepoDigests 0}}' | cut -d@ -f2)
+          if [ -z "$DIGEST" ]; then
+            echo "ERROR: Could not fetch image digest"
+            exit 1
+          fi
+          echo "DIGEST=${DIGEST}" >> $GITHUB_OUTPUT
+          echo "Full image: ghcr.io/hkuds/lightrag@${DIGEST}"
 
       - name: Print deployment info
         run: |
