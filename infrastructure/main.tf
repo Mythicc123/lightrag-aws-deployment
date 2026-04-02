@@ -189,10 +189,8 @@ resource "aws_instance" "lightrag" {
   iam_instance_profile   = aws_iam_instance_profile.lightrag.name
 
   # Bootstrap script: swap setup, Docker install, git clone, S3 restore, SSM secrets, compose up.
-  # Passes S3 bucket name so the script is environment-agnostic.
-  user_data = templatefile("${path.module}/user_data.sh", {
-    s3_bucket_name = aws_s3_bucket.graph_storage.id
-  })
+  # S3 bucket name read from /var/tmp/lightrag-s3-bucket.txt (written by local_file below).
+  user_data = file("${path.module}/user_data.sh")
 
   # Root block device: 20GB (sufficient for Docker images + rag_storage data).
   root_block_device {
