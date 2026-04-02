@@ -74,13 +74,16 @@ jobs:
             echo "=== Starting deployment at ${DEPLOY_START} ==="
             echo "[Digest] Using pinned image: ${IMAGE_WITH_DIGEST}"
 
-            # Navigate to deploy directory
-            cd "${DEPLOY_DIR}"
-
-            # CICD-03: Pull latest code from git
-            echo "[Git] Pulling latest..."
-            git fetch origin workspace/lightrag-aws-deployment
-            git pull origin workspace/lightrag-aws-deployment
+            # Clone or update the HKUDS/LightRAG app repo
+            if [ ! -d "${DEPLOY_DIR}/.git" ]; then
+              echo "[Git] Cloning HKUDS/LightRAG repo to ${DEPLOY_DIR}..."
+              rm -rf "${DEPLOY_DIR}"
+              git clone https://github.com/HKUDS/LightRAG.git "${DEPLOY_DIR}"
+            else
+              echo "[Git] Pulling latest HKUDS/LightRAG..."
+              cd "${DEPLOY_DIR}"
+              git pull origin main
+            fi
 
             # CICD-04: Write docker-compose.override.yml with digest-pinned image
             echo "[Compose] Writing docker-compose.override.yml..."

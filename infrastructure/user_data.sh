@@ -13,14 +13,6 @@ exec > >(tee -a "$LOGFILE") 2>&1
 
 echo "=== LightRAG Bootstrap START $(date -u) ==="
 
-# ─── Determine S3 bucket name ─────────────────────────────────────────────────
-# Bucket naming: ${project_name}-graph-storage-<AWS_ACCOUNT_ID>
-# Fetch AWS account ID from instance metadata (IMDS), which is always available.
-AWS_ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document 2>/dev/null | jq -r '.accountId')
-PROJECT_NAME="lightrag"
-S3_BUCKET_NAME="${PROJECT_NAME}-graph-storage-${AWS_ACCOUNT_ID}"
-echo "[INFO] S3 bucket name: ${S3_BUCKET_NAME}"
-
 # ─── BOOT-07: Idempotency ─────────────────────────────────────────────────────
 if [ -f /var/lib/lightrag/.bootstrapped ]; then
   echo "[BOOT-07] Bootstrap flag found. Ensuring Docker Compose is running..."
@@ -62,6 +54,14 @@ apt-get install -y docker.io docker-compose-v2 awscli curl jq
 systemctl start docker
 systemctl enable docker
 usermod -aG docker ubuntu
+
+# ─── Determine S3 bucket name ─────────────────────────────────────────────────
+# Bucket naming: lightrag-graph-storage-<AWS_ACCOUNT_ID>
+# Use awscli (already installed above) to get account ID without jq dependency.
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
+PROJECT_NAME="lightrag"
+S3_BUCKET_NAME="${PROJECT_NAME}-graph-storage-${AWS_ACCOUNT_ID}"
+echo "[INFO] S3 bucket name: ${S3_BUCKET_NAME}"
 
 # ─── Create directories ─────────────────────────────────────────────────────────
 echo "Creating application directories..."
@@ -146,7 +146,7 @@ if [ -n "${1:-}" ]; then
 elif [ -n "${LIGHTRAG_S3_BUCKET:-}" ]; then
   S3_BUCKET="$LIGHTRAG_S3_BUCKET"
 else
-  AWS_ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.accountId')
+  AWS_ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
   S3_BUCKET="lightrag-graph-storage-${AWS_ACCOUNT_ID}"
 fi
 if [ -z "$S3_BUCKET" ]; then
