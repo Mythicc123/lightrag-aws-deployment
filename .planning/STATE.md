@@ -4,12 +4,12 @@ milestone: v0.1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 01-iac-foundation-and-ec2-bootstrap plan 01
-last_updated: "2026-04-02T13:06:41.293Z"
-last_activity: 2026-04-02
+last_updated: "2026-04-02T13:22:07.691Z"
+last_activity: 2026-04-02 -- Phase 02 execution started
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 1
+  total_plans: 2
   completed_plans: 1
   percent: 0
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** A fully operational, production-ready LightRAG deployment on AWS that a hiring engineer can understand, deploy, and demo end-to-end in under 30 minutes.
-**Current focus:** Phase 01 — IaC Foundation and EC2 Bootstrap
+**Current focus:** Phase 02 — CI/CD Pipeline and Smoke Testing
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
-Status: Executing Phase 01
-Last activity: 2026-04-02
+Phase: 02 (CI/CD Pipeline and Smoke Testing) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 02
+Last activity: 2026-04-02 -- Phase 02 execution started
 
 Progress: [░░░░░░░░░░] 0%
 

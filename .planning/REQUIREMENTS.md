@@ -34,18 +34,18 @@
 
 ### CI/CD
 
-- [ ] **CICD-01**: GitHub Actions workflow triggers on release tags (e.g., v*)
-- [ ] **CICD-02**: GitHub Actions workflow assumes existing OIDC IAM role "mythicc123" (do not create new) and uses appleboy/ssh-action to deploy
-- [ ] **CICD-03**: Deploy steps: git pull latest, docker compose pull, docker compose up -d, curl health check against /health endpoint
-- [ ] **CICD-04**: Workflow uses Docker digest-pinned image (SHA, not :latest tag) for reproducibility
+- [x] **CICD-01**: GitHub Actions workflow triggers on release tags (e.g., v*)
+- [x] **CICD-02**: GitHub Actions workflow assumes existing OIDC IAM role "mythicc123" (do not create new) and uses appleboy/ssh-action to deploy
+- [x] **CICD-03**: Deploy steps: git pull latest, docker compose pull, docker compose up -d, curl health check against /health endpoint
+- [x] **CICD-04**: Workflow uses Docker digest-pinned image (SHA, not :latest tag) for reproducibility
 
 ### Testing
 
-- [ ] **TEST-01**: Playwright E2E smoke tests ingest a sample text document via POST /documents/insert
-- [ ] **TEST-02**: Playwright polls /documents/status endpoint until ingestion completes
-- [ ] **TEST-03**: Playwright queries in hybrid mode via POST /query with appropriate payload
-- [ ] **TEST-04**: Playwright asserts entity/relation presence in the hybrid query response
-- [ ] **TEST-05**: Playwright tests run against the Elastic IP on port 9621
+- [x] **TEST-01**: Playwright E2E smoke tests ingest a sample text document via POST /documents/insert
+- [x] **TEST-02**: Playwright polls /documents/status endpoint until ingestion completes
+- [x] **TEST-03**: Playwright queries in hybrid mode via POST /query with appropriate payload
+- [x] **TEST-04**: Playwright asserts entity/relation presence in the hybrid query response
+- [x] **TEST-05**: Playwright tests run against the Elastic IP on port 9621
 
 ### Documentation
 
@@ -95,15 +95,15 @@
 | PERS-01 | Phase 1 | Complete |
 | PERS-02 | Phase 1 | Complete |
 | PERS-03 | Phase 1 | Complete |
-| CICD-01 | Phase 2 | Pending |
-| CICD-02 | Phase 2 | Pending |
-| CICD-03 | Phase 2 | Pending |
-| CICD-04 | Phase 2 | Pending |
-| TEST-01 | Phase 2 | Pending |
-| TEST-02 | Phase 2 | Pending |
-| TEST-03 | Phase 2 | Pending |
-| TEST-04 | Phase 2 | Pending |
-| TEST-05 | Phase 2 | Pending |
+| CICD-01 | Phase 2 | Complete |
+| CICD-02 | Phase 2 | Complete |
+| CICD-03 | Phase 2 | Complete |
+| CICD-04 | Phase 2 | Complete |
+| TEST-01 | Phase 2 | Complete |
+| TEST-02 | Phase 2 | Complete |
+| TEST-03 | Phase 2 | Complete |
+| TEST-04 | Phase 2 | Complete |
+| TEST-05 | Phase 2 | Complete |
 | DOCS-01 | Phase 3 | Pending |
 | DOCS-02 | Phase 3 | Pending |
 | DOCS-03 | Phase 3 | Pending |

@@ -9,7 +9,7 @@
 ## Phases
 
 - [ ] **Phase 1: IaC Foundation and EC2 Bootstrap** - Terraform provisions EC2, EIP, S3, IAM, SG. user_data bootstraps Docker, SSM secrets, S3 restore, and compose up with persistence scripts.
-- [ ] **Phase 2: CI/CD Pipeline and Smoke Testing** - GitHub Actions deploy workflow on release tags with OIDC, SSH deploy, health check, and Playwright E2E smoke tests.
+- [x] **Phase 2: CI/CD Pipeline and Smoke Testing** - GitHub Actions deploy workflow on release tags with OIDC, SSH deploy, health check, and Playwright E2E smoke tests. (completed 2026-04-02)
 - [ ] **Phase 3: Documentation and Hardening** - README with architecture diagram, SSM setup commands, cost breakdown, demo curl script, and EIP billing warning.
 
 ---
@@ -58,10 +58,10 @@ Plans:
 4. Playwright smoke tests run headlessly against the Elastic IP on port 9621 and ingest a document, poll status, query in hybrid mode, and assert an entity in the response.
 5. Docker image is referenced by SHA digest, not `:latest`, ensuring reproducible deployments.
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 02-01-PLAN.md -- CI/CD deploy pipeline (GitHub Actions + Playwright smoke tests)
+- [x] 02-01-PLAN.md -- CI/CD deploy pipeline (GitHub Actions + Playwright smoke tests)
 
 ---
 
@@ -91,7 +91,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. IaC Foundation and EC2 Bootstrap | 1/1 | Not started | - |
-| 2. CI/CD Pipeline and Smoke Testing | 0/1 | Not started | - |
+| 2. CI/CD Pipeline and Smoke Testing | 1/1 | Complete   | 2026-04-02 |
 | 3. Documentation and Hardening | 0/1 | Not started | - |
 
 ---
