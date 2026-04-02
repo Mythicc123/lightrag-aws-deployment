@@ -35,7 +35,10 @@
 7. The S3 sync cron job and systemd shutdown unit both use flock locking to prevent race conditions.
 8. Docker Compose runs with memory limit of 750m and a working health check.
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 01-01-PLAN.md -- Terraform IaC (EC2, EIP, S3, IAM, SG) + user_data bootstrap (Docker, SSM, S3 restore, compose up) + persistence scripts (cron, systemd) + Docker Compose override + .env.example + .gitignore
 
 ---
 
@@ -84,7 +87,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. IaC Foundation and EC2 Bootstrap | 0/1 | Not started | - |
+| 1. IaC Foundation and EC2 Bootstrap | 1/1 | Not started | - |
 | 2. CI/CD Pipeline and Smoke Testing | 0/1 | Not started | - |
 | 3. Documentation and Hardening | 0/1 | Not started | - |
 
