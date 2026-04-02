@@ -12,14 +12,13 @@ A fully operational, production-ready LightRAG deployment on AWS that a hiring e
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Terraform provisions EC2 t3.micro, Elastic IP, S3 graph bucket, IAM instance role, and security group — Phase 1
+- [x] EC2 user_data script: 2GB swap setup, Docker install, S3 rag_storage restore, SSM secret load, docker compose up — Phase 1
+- [x] Cron job every 15 min uploads rag_storage/ to S3; systemd shutdown unit syncs before instance stop — Phase 1
+- [x] .env configured for Anthropic Claude (Sonnet queries, Haiku indexing) + OpenAI text-embedding-3-large embeddings — Phase 1
 
 ### Active
 
-- [ ] Terraform provisions EC2 t3.micro, Elastic IP, S3 graph bucket, IAM instance role, and security group
-- [ ] EC2 user_data script: 2GB swap setup, Docker install, S3 rag_storage restore, SSM secret load, docker compose up
-- [ ] Cron job every 15 min uploads rag_storage/ to S3; systemd shutdown unit syncs before instance stop
-- [ ] .env configured for Anthropic Claude (Sonnet queries, Haiku indexing) + OpenAI text-embedding-3-large embeddings
 - [ ] GitHub Actions deploy workflow on release tag: SSH deploy, pull latest, restart compose, /health check
 - [ ] Playwright E2E smoke tests: ingest text → poll until complete → hybrid query → assert entity in response
 - [ ] README with architecture diagram (ASCII), SSM setup steps, cost breakdown, demo curl script
@@ -55,17 +54,18 @@ A fully operational, production-ready LightRAG deployment on AWS that a hiring e
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| t3.micro with 2GB swap | $7.50/month target; 1GB RAM insufficient for LightRAG | — Pending |
-| API-hosted embeddings (OpenAI) | Preserves t3.micro RAM headroom vs local Ollama | — Pending |
-| S3 cron + systemd shutdown for persistence | Simple, zero-cost, reliable for demo corpus | — Pending |
-| GitHub Actions OIDC (reuse mythicc123 role) | No long-lived credentials; aligns with existing portfolio | — Pending |
-| SSM Parameter Store for secrets | Free, no secrets in git or terraform state | — Pending |
-| No HTTPS for V1 | Reduces complexity; Elastic IP directly accessible | — Pending |
-| Single EC2 (no ASG) | Cost-constrained portfolio demo | — Pending |
+| t3.micro with 2GB swap | $7.50/month target; 1GB RAM insufficient for LightRAG | ✓ Validated — implemented in user_data.sh (BOOT-01) |
+| API-hosted embeddings (OpenAI) | Preserves t3.micro RAM headroom vs local Ollama | ✓ Validated — text-embedding-3-large in .env.example |
+| S3 cron + systemd shutdown for persistence | Simple, zero-cost, reliable for demo corpus | ✓ Validated — flock-locked sync in both paths (PERS-01, PERS-02) |
+| SSM Parameter Store for secrets | Free, no secrets in git or terraform state | ✓ Validated — IAM policy scoped to /lightrag/*, no keys in files |
+| No HTTPS for V1 | Reduces complexity; Elastic IP directly accessible | ✓ Validated — port 443 SG rule present as placeholder, not wired |
+| Single EC2 (no ASG) | Cost-constrained portfolio demo | ✓ Validated — single aws_instance, t3.micro default |
+| GitHub Actions OIDC (reuse mythicc123 role) | No long-lived credentials; aligns with existing portfolio | — Pending — Phase 2 |
+| Docker Compose v2 on Ubuntu 24.04 | Compose Specification (no version key), Ubuntu 24.04 LTS AMI | ✓ Validated — user_data.sh installs docker-compose-v2 package |
 
 ---
 
-*Last updated: 2026-04-02 after initialization*
+*Last updated: 2026-04-02 after Phase 1 completion*
 
 ## Evolution
 
