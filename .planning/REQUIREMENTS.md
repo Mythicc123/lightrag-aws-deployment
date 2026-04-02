@@ -49,12 +49,12 @@
 
 ### Documentation
 
-- [ ] **DOCS-01**: README includes architecture diagram (ASCII) showing EC2, S3, SSM, IAM, GitHub Actions components
-- [ ] **DOCS-02**: README documents SSM Parameter Store setup steps with exact aws ssm put-parameter commands
-- [ ] **DOCS-03**: README includes cost breakdown table (EC2, EIP, S3, SSM, API costs)
-- [ ] **DOCS-04**: README warns about Elastic IP billing when instance is stopped
-- [ ] **DOCS-05**: README includes demo curl script: ingest text → poll → query
-- [ ] **DOCS-06**: .gitignore excludes .env, rag_storage/, terraform/.terraform/, *.tfstate, __pycache__/
+- [x] **DOCS-01**: README includes architecture diagram (ASCII) showing EC2, S3, SSM, IAM, GitHub Actions components
+- [x] **DOCS-02**: README documents SSM Parameter Store setup steps with exact aws ssm put-parameter commands
+- [x] **DOCS-03**: README includes cost breakdown table (EC2, EIP, S3, SSM, API costs)
+- [x] **DOCS-04**: README warns about Elastic IP billing when instance is stopped
+- [x] **DOCS-05**: README includes demo curl script: ingest text → poll → query
+- [x] **DOCS-06**: .gitignore excludes .env, rag_storage/, terraform/.terraform/, *.tfstate, __pycache__/
 
 ## v2 Requirements
 
@@ -104,12 +104,12 @@
 | TEST-03 | Phase 2 | Complete |
 | TEST-04 | Phase 2 | Complete |
 | TEST-05 | Phase 2 | Complete |
-| DOCS-01 | Phase 3 | Pending |
-| DOCS-02 | Phase 3 | Pending |
-| DOCS-03 | Phase 3 | Pending |
-| DOCS-04 | Phase 3 | Pending |
-| DOCS-05 | Phase 3 | Pending |
-| DOCS-06 | Phase 3 | Pending |
+| DOCS-01 | Phase 3 | Complete |
+| DOCS-02 | Phase 3 | Complete |
+| DOCS-03 | Phase 3 | Complete |
+| DOCS-04 | Phase 3 | Complete |
+| DOCS-05 | Phase 3 | Complete |
+| DOCS-06 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 32 total
