@@ -7,30 +7,30 @@
 
 ### Infrastructure (IaC)
 
-- [ ] **IAC-01**: Terraform provisions EC2 t3.micro (Ubuntu 24.04) in ap-southeast-2 with remote state backend pointing to existing bucket "mythicc-lightrag-tfstate"
-- [ ] **IAC-02**: Terraform provisions and associates an Elastic IP with the EC2 instance
-- [ ] **IAC-03**: Terraform creates an S3 bucket (separate from state bucket) for rag_storage graph persistence with lifecycle policy
-- [ ] **IAC-04**: Terraform creates an IAM instance role with least-privilege S3 permissions (scoped to graph bucket only) and SSM Parameter Store read permissions (scoped to /lightrag/* path)
-- [ ] **IAC-05**: Terraform creates a security group allowing: 22 (SSH, deploy), 443 (HTTPS future), 9621 (LightRAG WebUI, VPC-only or limited CIDR)
-- [ ] **IAC-06**: Terraform uses data source to reference existing key pair "ec2-static-site-key" (do not create new)
-- [ ] **IAC-07**: Terraform exposes instance_type as a variable with default "t3.micro" (overrideable to t3.small or t3.medium)
-- [ ] **IAC-08**: EC2 instance has an IAM instance profile attached so the instance role is available to processes on the host
+- [x] **IAC-01**: Terraform provisions EC2 t3.micro (Ubuntu 24.04) in ap-southeast-2 with remote state backend pointing to existing bucket "mythicc-lightrag-tfstate"
+- [x] **IAC-02**: Terraform provisions and associates an Elastic IP with the EC2 instance
+- [x] **IAC-03**: Terraform creates an S3 bucket (separate from state bucket) for rag_storage graph persistence with lifecycle policy
+- [x] **IAC-04**: Terraform creates an IAM instance role with least-privilege S3 permissions (scoped to graph bucket only) and SSM Parameter Store read permissions (scoped to /lightrag/* path)
+- [x] **IAC-05**: Terraform creates a security group allowing: 22 (SSH, deploy), 443 (HTTPS future), 9621 (LightRAG WebUI, VPC-only or limited CIDR)
+- [x] **IAC-06**: Terraform uses data source to reference existing key pair "ec2-static-site-key" (do not create new)
+- [x] **IAC-07**: Terraform exposes instance_type as a variable with default "t3.micro" (overrideable to t3.small or t3.medium)
+- [x] **IAC-08**: EC2 instance has an IAM instance profile attached so the instance role is available to processes on the host
 
 ### Bootstrap (user_data)
 
-- [ ] **BOOT-01**: user_data script creates a 2GB swap file and enables it on first boot
-- [ ] **BOOT-02**: user_data script installs Docker Engine and Docker Compose v2 on Ubuntu
-- [ ] **BOOT-03**: user_data script pulls the LightRAG GitHub repo to /opt/lightrag
-- [ ] **BOOT-04**: user_data script downloads rag_storage/ from S3 (if bucket is non-empty) before starting the container
-- [ ] **BOOT-05**: user_data script reads ANTHROPIC_API_KEY, OPENAI_API_KEY, LIGHTRAG_API_KEY from SSM Parameter Store and writes to /opt/lightrag/.env
-- [ ] **BOOT-06**: user_data script runs docker compose up -d with memory limits (750m) and health check
-- [ ] **BOOT-07**: user_data script is idempotent: skips re-cloning if /opt/lightrag already exists
+- [x] **BOOT-01**: user_data script creates a 2GB swap file and enables it on first boot
+- [x] **BOOT-02**: user_data script installs Docker Engine and Docker Compose v2 on Ubuntu
+- [x] **BOOT-03**: user_data script pulls the LightRAG GitHub repo to /opt/lightrag
+- [x] **BOOT-04**: user_data script downloads rag_storage/ from S3 (if bucket is non-empty) before starting the container
+- [x] **BOOT-05**: user_data script reads ANTHROPIC_API_KEY, OPENAI_API_KEY, LIGHTRAG_API_KEY from SSM Parameter Store and writes to /opt/lightrag/.env
+- [x] **BOOT-06**: user_data script runs docker compose up -d with memory limits (750m) and health check
+- [x] **BOOT-07**: user_data script is idempotent: skips re-cloning if /opt/lightrag already exists
 
 ### Persistence
 
-- [ ] **PERS-01**: Cron job runs every 15 minutes executing an S3 sync script that uploads rag_storage/ to the graph S3 bucket using flock locking to prevent race conditions
-- [ ] **PERS-02**: systemd shutdown unit triggers S3 sync before the instance stops or reboots, ensuring graph data is persisted
-- [ ] **PERS-03**: On first boot (empty S3 bucket), Docker Compose starts cleanly with no errors and WebUI is accessible on port 9621
+- [x] **PERS-01**: Cron job runs every 15 minutes executing an S3 sync script that uploads rag_storage/ to the graph S3 bucket using flock locking to prevent race conditions
+- [x] **PERS-02**: systemd shutdown unit triggers S3 sync before the instance stops or reboots, ensuring graph data is persisted
+- [x] **PERS-03**: On first boot (empty S3 bucket), Docker Compose starts cleanly with no errors and WebUI is accessible on port 9621
 
 ### CI/CD
 
@@ -77,24 +77,24 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| IAC-01 | Phase 1 | Pending |
-| IAC-02 | Phase 1 | Pending |
-| IAC-03 | Phase 1 | Pending |
-| IAC-04 | Phase 1 | Pending |
-| IAC-05 | Phase 1 | Pending |
-| IAC-06 | Phase 1 | Pending |
-| IAC-07 | Phase 1 | Pending |
-| IAC-08 | Phase 1 | Pending |
-| BOOT-01 | Phase 1 | Pending |
-| BOOT-02 | Phase 1 | Pending |
-| BOOT-03 | Phase 1 | Pending |
-| BOOT-04 | Phase 1 | Pending |
-| BOOT-05 | Phase 1 | Pending |
-| BOOT-06 | Phase 1 | Pending |
-| BOOT-07 | Phase 1 | Pending |
-| PERS-01 | Phase 1 | Pending |
-| PERS-02 | Phase 1 | Pending |
-| PERS-03 | Phase 1 | Pending |
+| IAC-01 | Phase 1 | Complete |
+| IAC-02 | Phase 1 | Complete |
+| IAC-03 | Phase 1 | Complete |
+| IAC-04 | Phase 1 | Complete |
+| IAC-05 | Phase 1 | Complete |
+| IAC-06 | Phase 1 | Complete |
+| IAC-07 | Phase 1 | Complete |
+| IAC-08 | Phase 1 | Complete |
+| BOOT-01 | Phase 1 | Complete |
+| BOOT-02 | Phase 1 | Complete |
+| BOOT-03 | Phase 1 | Complete |
+| BOOT-04 | Phase 1 | Complete |
+| BOOT-05 | Phase 1 | Complete |
+| BOOT-06 | Phase 1 | Complete |
+| BOOT-07 | Phase 1 | Complete |
+| PERS-01 | Phase 1 | Complete |
+| PERS-02 | Phase 1 | Complete |
+| PERS-03 | Phase 1 | Complete |
 | CICD-01 | Phase 2 | Pending |
 | CICD-02 | Phase 2 | Pending |
 | CICD-03 | Phase 2 | Pending |
