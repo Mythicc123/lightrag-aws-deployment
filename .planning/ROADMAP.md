@@ -58,7 +58,10 @@ Plans:
 4. Playwright smoke tests run headlessly against the Elastic IP on port 9621 and ingest a document, poll status, query in hybrid mode, and assert an entity in the response.
 5. Docker image is referenced by SHA digest, not `:latest`, ensuring reproducible deployments.
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 02-01-PLAN.md -- CI/CD deploy pipeline (GitHub Actions + Playwright smoke tests)
 
 ---
 
