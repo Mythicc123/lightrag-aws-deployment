@@ -31,19 +31,19 @@ jobs:
           fetch-depth: 0  # Fetch all history for git describe and tag operations
 
       # CICD-02: OIDC authentication -- assume existing mythicc123 role
-      - name: Configure AWS Credentials (OIDC)
-        id: auth
-        uses: actions/create-github-actions-oidc-token@v1
+      - name: Get OIDC token
+        id: token
+        uses: actions/github-script@v7
         with:
-          audience: sts.amazonaws.com
+          script: |
+            const token = await core.getIDToken('sts.amazonaws.com');
+            core.setOutput('value', token);
 
-      - name: Configure AWS OIDC role
+      - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ steps.auth.outputs.aws-access-key-id }}
-          aws-secret-access-key: ${{ steps.auth.outputs.aws-secret-access-key }}
-          aws-session-token: ${{ steps.auth.outputs.aws-session-token }}
           role-to-assume: arn:aws:iam::255445075474:role/mythicc123
+          web-identity-token: ${{ steps.token.outputs.value }}
           audience: sts.amazonaws.com
           aws-region: ${{ env.AWS_REGION }}
 
@@ -85,8 +85,8 @@ jobs:
 
             # CICD-03: Pull latest code from git
             echo "[Git] Pulling latest..."
-            git fetch --tags
-            git pull origin master
+            git fetch origin workspace/lightrag-aws-deployment
+            git pull origin workspace/lightrag-aws-deployment
 
             # CICD-04: Write docker-compose.override.yml with digest-pinned image
             echo "[Compose] Writing docker-compose.override.yml..."
