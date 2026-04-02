@@ -19,9 +19,7 @@ A fully operational, production-ready LightRAG deployment on AWS that a hiring e
 
 ### Active
 
-- [ ] GitHub Actions deploy workflow on release tag: SSH deploy, pull latest, restart compose, /health check
-- [ ] Playwright E2E smoke tests: ingest text → poll until complete → hybrid query → assert entity in response
-- [ ] README with architecture diagram (ASCII), SSM setup steps, cost breakdown, demo curl script
+*(None — all v1 requirements validated)*
 
 ### Out of Scope
 
@@ -65,7 +63,7 @@ A fully operational, production-ready LightRAG deployment on AWS that a hiring e
 
 ---
 
-*Last updated: 2026-04-02 after Phase 1 completion*
+*Last updated: 2026-04-03 after Phase 3 completion*
 
 ## Evolution
 
