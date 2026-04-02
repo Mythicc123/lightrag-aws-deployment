@@ -17,7 +17,7 @@ variable "instance_type" {
 }
 
 variable "ami_id" {
-  description = "Ubuntu 24.04 LTS AMI ID for ap-southeast-2. Leave as default to auto-detect via data source."
+  description = "Ubuntu 22.04 LTS AMI ID for ap-southeast-2. Leave as default to auto-detect via data source. (Ubuntu 24.04 is not yet available in ap-southeast-2 as of 2026-04.)"
   type        = string
   default     = "" # Set to "" to use the aws_ami data source below
 }
@@ -28,9 +28,9 @@ variable "ssh_allowed_cidr" {
   default     = "0.0.0.0/0"
 }
 
-# Data source: find the latest Ubuntu 24.04 LTS AMD64 AMI in the target region.
+# Data source: find the latest Ubuntu 22.04 LTS AMD64 AMI in the target region.
 # Canonical owner ID: 099720109477
-# This avoids hardcoding an AMI ID that may expire or change.
+# Ubuntu 24.04 LTS (Noble) is not yet available in ap-southeast-2 as of 2026-04.
 data "aws_ami" "ubuntu" {
   count = var.ami_id == "" ? 1 : 0
 
@@ -39,7 +39,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu-*-24.04 LTS*-amd64"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
 
   filter {
