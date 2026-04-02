@@ -1,0 +1,162 @@
+name: Deploy to EC2
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# CICD-01: Cancel in-progress run when a new tag is pushed
+concurrency:
+  group: ${{ github.repository }}
+  cancel-in-progress: true
+
+env:
+  EC2_HOST: 54.253.108.90
+  EC2_USER: ubuntu
+  LIGHTRAG_IMAGE: ghcr.io/hkuds/lightrag
+  AWS_REGION: ap-southeast-2
+
+jobs:
+  deploy:
+    name: Deploy LightRAG
+    runs-on: ubuntu-latest
+    # CICD-02: OIDC role -- do NOT create the role; it must already exist in the account
+    # Role ARN is constructed dynamically using the AWS account number
+
+    steps:
+      # CICD-01: Full checkout so git pull works on the EC2 instance
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git describe and tag operations
+
+      # CICD-02: OIDC authentication -- assume existing mythicc123 role
+      - name: Configure AWS Credentials (OIDC)
+        id: auth
+        uses: actions/create-github-actions-oidc-token@v1
+        with:
+          audience: sts.amazonaws.com
+
+      - name: Configure AWS OIDC role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ steps.auth.outputs.aws-access-key-id }}
+          aws-secret-access-key: ${{ steps.auth.outputs.aws-secret-access-key }}
+          aws-session-token: ${{ steps.auth.outputs.aws-session-token }}
+          role-to-assume: arn:aws:iam::255445075474:role/mythicc123
+          audience: sts.amazonaws.com
+          aws-region: ${{ env.AWS_REGION }}
+
+      # CICD-04: Fetch image digest for reproducible deployment
+      - name: Fetch image digest
+        id: digest
+        run: |
+          echo "DIGEST=$(docker manifest inspect ghcr.io/hkuds/lightrag:latest --format '{{.Digest}}')" >> $GITHUB_OUTPUT
+          echo "Full image: ghcr.io/hkuds/lightrag@$(docker manifest inspect ghcr.io/hkuds/lightrag:latest --format '{{.Digest}}')"
+
+      - name: Print deployment info
+        run: |
+          echo "Tag: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "EC2: ${{ env.EC2_HOST }}"
+          echo "Image: ghcr.io/hkuds/lightrag@${{ steps.digest.outputs.DIGEST }}"
+
+      # CICD-03: SSH deploy to EC2
+      - name: Run deploy
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 10m
+          script: |
+            set -euo pipefail
+
+            DEPLOY_DIR="/opt/lightrag"
+            IMAGE_DIGEST="${{ steps.digest.outputs.DIGEST }}"
+            IMAGE_WITH_DIGEST="ghcr.io/hkuds/lightrag@${IMAGE_DIGEST}"
+            DEPLOY_START="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+            echo "=== Starting deployment at ${DEPLOY_START} ==="
+            echo "[Digest] Using pinned image: ${IMAGE_WITH_DIGEST}"
+
+            # Navigate to deploy directory
+            cd "${DEPLOY_DIR}"
+
+            # CICD-03: Pull latest code from git
+            echo "[Git] Pulling latest..."
+            git fetch --tags
+            git pull origin master
+
+            # CICD-04: Write docker-compose.override.yml with digest-pinned image
+            echo "[Compose] Writing docker-compose.override.yml..."
+            cat > docker-compose.override.yml << 'COMPOSE_EOF'
+            services:
+              lightrag:
+                image: ghcr.io/hkuds/lightrag@IMAGE_DIGEST_PLACEHOLDER
+                restart: unless-stopped
+                stop_grace_period: 30s
+                deploy:
+                  resources:
+                    limits:
+                      memory: 750m
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:9621/health"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+                  start_period: 60s
+                environment:
+                  HOST: "0.0.0.0"
+                  PORT: "9621"
+            COMPOSE_EOF
+
+            # Replace the placeholder with the actual digest
+            sed -i "s|IMAGE_DIGEST_PLACEHOLDER|${IMAGE_DIGEST}|" docker-compose.override.yml
+
+            # Update .env with the pinned image
+            {
+              grep -v '^LIGHTRAG_IMAGE=' .env 2>/dev/null || true
+              echo "LIGHTRAG_IMAGE=${IMAGE_WITH_DIGEST}"
+            } > .env.tmp && mv .env.tmp .env
+
+            # CICD-03: Pull and restart containers
+            echo "[Docker] Pulling ${IMAGE_WITH_DIGEST}..."
+            docker compose pull
+
+            echo "[Docker] Restarting containers..."
+            docker compose up -d
+
+            # CICD-03: Wait for container startup
+            echo "[Health] Waiting for LightRAG to be ready..."
+            sleep 15
+
+            # CICD-03: Health check
+            echo "[Health] Checking /health endpoint..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -f http://localhost:9621/health)
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "ERROR: Health check failed with HTTP ${HTTP_CODE}"
+              docker compose logs --tail=50
+              exit 1
+            fi
+            echo "[Health] PASS -- HTTP 200"
+
+            DEPLOY_END="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+            echo "=== Deployment complete at ${DEPLOY_END} ==="
+
+      # CICD-03: Report deployment summary
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image Digest | \`${{ steps.digest.outputs.DIGEST }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Endpoint | http://${{ env.EC2_HOST }}:9621 |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**To trigger a deployment:**" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "git tag v0.1.0 && git push --tags" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
