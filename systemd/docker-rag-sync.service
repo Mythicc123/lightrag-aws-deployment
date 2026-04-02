@@ -1,0 +1,22 @@
+[Unit]
+Description=LightRAG rag_storage S3 Sync on Shutdown
+# This service runs on every instance stop/reboot to persist graph data to S3.
+# The sync script uses flock locking so concurrent runs are prevented.
+Documentation=https://github.com/HKUDS/LightRAG
+
+[Service]
+Type=oneshot
+# RemainAfterExit=yes means ExecStop runs even after Type=oneshot completes.
+# This ensures the sync happens on every shutdown, not just start.
+RemainAfterExit=yes
+# No-op on start — sync only runs on shutdown via ExecStop.
+ExecStart=/bin/true
+# Run S3 sync before instance stops. Pass bucket name via environment variable.
+# The bucket name is known at instance launch time.
+ExecStop=/usr/local/bin/sync-rag-storage.sh
+# Ensure Docker is running before syncing (rag_storage needs Docker Compose state).
+Requires=docker.service
+After=docker.service
+
+[Install]
+WantedBy=multi-user.target

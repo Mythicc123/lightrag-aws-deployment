@@ -3,8 +3,9 @@
 # Runs on first boot via cloud-init user_data.
 # Idempotent: skips full bootstrap if /var/lib/lightrag/.bootstrapped exists.
 #
-# Expected variables (passed via Terraform templatefile):
-#   s3_bucket_name  - S3 bucket for rag_storage/ persistence
+# S3 bucket name is computed from instance metadata at boot time:
+#   ${project_name}-graph-storage-<aws_account_id>
+# This avoids templatefile() conflicts with bash variable syntax.
 set -euo pipefail
 
 LOGFILE="/var/log/lightrag-bootstrap.log"
@@ -12,8 +13,15 @@ exec > >(tee -a "$LOGFILE") 2>&1
 
 echo "=== LightRAG Bootstrap START $(date -u) ==="
 
+# ─── Determine S3 bucket name ─────────────────────────────────────────────────
+# Bucket naming: ${project_name}-graph-storage-<AWS_ACCOUNT_ID>
+# Fetch AWS account ID from instance metadata (IMDS), which is always available.
+AWS_ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document 2>/dev/null | jq -r '.accountId')
+PROJECT_NAME="lightrag"
+S3_BUCKET_NAME="${PROJECT_NAME}-graph-storage-${AWS_ACCOUNT_ID}"
+echo "[INFO] S3 bucket name: ${S3_BUCKET_NAME}"
+
 # ─── BOOT-07: Idempotency ─────────────────────────────────────────────────────
-# Skip full bootstrap if already done (e.g., instance restart).
 if [ -f /var/lib/lightrag/.bootstrapped ]; then
   echo "[BOOT-07] Bootstrap flag found. Ensuring Docker Compose is running..."
   if command -v docker >/dev/null 2>&1; then
@@ -24,7 +32,6 @@ if [ -f /var/lib/lightrag/.bootstrapped ]; then
 fi
 
 # ─── BOOT-01: Swap File ────────────────────────────────────────────────────────
-# t3.micro has 1GB RAM. Create 2GB swap to run LightRAG (Python + model overhead).
 echo "[BOOT-01] Setting up 2GB swap file..."
 
 if swapon --show | grep -q /swapfile; then
@@ -40,32 +47,27 @@ else
   swapon /swapfile
 fi
 
-# Add to /etc/fstab if not already present
 if ! grep -q "/swapfile" /etc/fstab 2>/dev/null; then
   echo "/swapfile none swap sw 0 0" >> /etc/fstab
 fi
 
-# Enable swappiness for LightRAG workloads
 sysctl vm.swappiness=60 2>/dev/null || true
 
 # ─── BOOT-02: Docker Install ──────────────────────────────────────────────────
 echo "[BOOT-02] Installing Docker, Docker Compose v2, and awscli..."
 
 apt-get update -y
-apt-get install -y docker.io docker-compose-v2 awscli curl
+apt-get install -y docker.io docker-compose-v2 awscli curl jq
 
 systemctl start docker
 systemctl enable docker
-
-# Allow ubuntu user to access Docker socket
 usermod -aG docker ubuntu
 
 # ─── Create directories ─────────────────────────────────────────────────────────
 echo "Creating application directories..."
-mkdir -p /opt/lightrag /var/lib/lightrag /var/lock/lightrag
+mkdir -p /opt/lightrag/scripts /opt/lightrag/systemd /opt/lightrag/data /var/lib/lightrag /var/lock/lightrag
 
 # ─── BOOT-03: Clone LightRAG Repo ─────────────────────────────────────────────
-# Only clone if not already present (idempotent).
 echo "[BOOT-03] Cloning LightRAG repository..."
 
 if [ -d /opt/lightrag/.git ]; then
@@ -75,24 +77,18 @@ else
 fi
 
 # ─── BOOT-04: Restore rag_storage from S3 ──────────────────────────────────────
-# If rag_storage/ exists in S3, restore it to the host.
-# If S3 is empty (first boot), this gracefully does nothing.
-echo "[BOOT-04] Restoring rag_storage from S3 bucket: ${s3_bucket_name}..."
+echo "[BOOT-04] Restoring rag_storage from S3 bucket: ${S3_BUCKET_NAME}..."
 
-mkdir -p /opt/lightrag/data
-aws s3 sync "s3://${s3_bucket_name}/rag_storage/" /opt/lightrag/data/rag_storage/ || true
+aws s3 sync "s3://${S3_BUCKET_NAME}/rag_storage/" /opt/lightrag/data/rag_storage/ || true
 
 # ─── BOOT-05: Load Secrets from SSM Parameter Store ───────────────────────────
-# Fetch API keys from SSM and write /opt/lightrag/.env.
-# All secrets loaded at runtime — none hardcoded.
 echo "[BOOT-05] Loading secrets from SSM Parameter Store..."
 
-# Retry helper: retry up to 3 times with 5-second backoff.
 ssm_get_with_retry() {
   local param_name="$1"
   local result=""
   for attempt in 1 2 3; do
-    result=$(aws ssm get-parameter --name "$param_name" --with-decryption --output text --query Parameter.Value 2>/dev/null || true)
+    result=$(aws ssm get-parameter --name "$param_name" --with-decryption --output json 2>/dev/null | jq -r '.Parameter.Value' || true)
     if [ -n "$result" ]; then
       echo "$result"
       return 0
@@ -108,7 +104,6 @@ ANTHROPIC_API_KEY=$(ssm_get_with_retry "/lightrag/ANTHROPIC_API_KEY")
 OPENAI_API_KEY=$(ssm_get_with_retry "/lightrag/OPENAI_API_KEY")
 LIGHTRAG_API_KEY=$(ssm_get_with_retry "/lightrag/LIGHTRAG_API_KEY")
 
-# Validate all three keys are non-empty
 if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$OPENAI_API_KEY" ] || [ -z "$LIGHTRAG_API_KEY" ]; then
   echo "[BOOT-05] WARNING: One or more API keys missing from SSM Parameter Store."
   echo "[BOOT-05] Ensure the following SSM parameters exist:"
@@ -118,44 +113,107 @@ if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$OPENAI_API_KEY" ] || [ -z "$LIGHTRAG_AP
   echo "[BOOT-05] LightRAG will show auth errors but not crash. Fix keys and restart."
 fi
 
-# Write .env file with loaded secrets and LightRAG configuration.
-cat > /opt/lightrag/.env << EOF
-# LightRAG Environment Variables
-# Loaded from SSM Parameter Store at bootstrap time
-ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-OPENAI_API_KEY=${OPENAI_API_KEY}
-LIGHTRAG_API_KEY=${LIGHTRAG_API_KEY}
+cat > /opt/lightrag/.env << 'ENVEOF'
+ANTHROPIC_API_KEY=ANTHROPIC_API_KEY_PLACEHOLDER
+OPENAI_API_KEY=OPENAI_API_KEY_PLACEHOLDER
+LIGHTRAG_API_KEY=LIGHTRAG_API_KEY_PLACEHOLDER
 MODEL=claude-sonnet-3-7-20250619
 MODEL_LIST=claude-haiku-3-5-20250514
 EMBEDDING_MODEL=text-embedding-3-large
 EMBEDDING_DIM=3072
 HOST=0.0.0.0
 PORT=9621
-EOF
+ENVEOF
 
+# Replace placeholder tokens with actual SSM-loaded values
+sed -i "s/ANTHROPIC_API_KEY_PLACEHOLDER/$ANTHROPIC_API_KEY/g" /opt/lightrag/.env
+sed -i "s/OPENAI_API_KEY_PLACEHOLDER/$OPENAI_API_KEY/g" /opt/lightrag/.env
+sed -i "s/LIGHTRAG_API_KEY_PLACEHOLDER/$LIGHTRAG_API_KEY/g" /opt/lightrag/.env
 chmod 600 /opt/lightrag/.env
 echo "[BOOT-05] Secrets written to /opt/lightrag/.env"
 
-# ─── BOOT-06: Copy sync script, systemd unit, and Docker Compose override ────────
-echo "[BOOT-06] Setting up sync scripts and Docker Compose override..."
+# ─── BOOT-06 / PERS-01 / PERS-02: Sync scripts, systemd unit, Docker Compose override ────
 
-# Copy S3 sync script to /usr/local/bin
-cp /opt/lightrag/scripts/sync-rag-storage.sh /usr/local/bin/ 2>/dev/null || true
+# PERS-01: S3 sync script with flock locking
+cat > /usr/local/bin/sync-rag-storage.sh << 'SYNCEOF'
+#!/bin/bash
+set -euo pipefail
+LOCK_FILE="/var/lock/lightrag-s3-sync.lock"
+SOURCE_DIR="/opt/lightrag/data/rag_storage"
+S3_BUCKET=""
+if [ -n "${1:-}" ]; then
+  S3_BUCKET="$1"
+elif [ -n "${LIGHTRAG_S3_BUCKET:-}" ]; then
+  S3_BUCKET="$LIGHTRAG_S3_BUCKET"
+else
+  AWS_ACCOUNT_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.accountId')
+  S3_BUCKET="lightrag-graph-storage-${AWS_ACCOUNT_ID}"
+fi
+if [ -z "$S3_BUCKET" ]; then
+  echo "$(date -u) ERROR: S3 bucket not determined." >&2
+  exit 1
+fi
+exec flock -n "$LOCK_FILE" -c "
+  echo \"$(date -u) INFO: Starting S3 sync: $SOURCE_DIR -> s3://$S3_BUCKET/rag_storage/\"
+  aws s3 sync \"$SOURCE_DIR/\" \"s3://$S3_BUCKET/rag_storage/\" --delete
+  echo \"$(date -u) INFO: S3 sync complete\"
+" || {
+  echo "$(date -u) INFO: Sync skipped (lock held by another process)"
+  exit 0
+}
+SYNCEOF
 chmod +x /usr/local/bin/sync-rag-storage.sh
 
-# Copy systemd shutdown unit
-cp /opt/lightrag/systemd/docker-rag-sync.service /etc/systemd/system/ 2>/dev/null || true
+# Copy sync script into the LightRAG directory structure for reference
+mkdir -p /opt/lightrag/scripts
+cp /usr/local/bin/sync-rag-storage.sh /opt/lightrag/scripts/sync-rag-storage.sh
+
+# PERS-02: systemd shutdown unit
+cat > /etc/systemd/system/docker-rag-sync.service << 'SYSEOF'
+[Unit]
+Description=LightRAG rag_storage S3 Sync on Shutdown
+Documentation=https://github.com/HKUDS/LightRAG
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/local/bin/sync-rag-storage.sh
+Requires=docker.service
+After=docker.service
+
+[Install]
+WantedBy=multi-user.target
+SYSEOF
+
+# Copy systemd unit into the LightRAG directory structure for reference
+mkdir -p /opt/lightrag/systemd
+cp /etc/systemd/system/docker-rag-sync.service /opt/lightrag/systemd/docker-rag-sync.service
 
 systemctl daemon-reload
 systemctl enable docker-rag-sync.service 2>/dev/null || true
 
-# Install cron job for periodic S3 sync (every 15 minutes)
-mkdir -p /etc/cron.d
+# Install cron job: every 15 minutes, sync rag_storage to S3
 echo "*/15 * * * * root /usr/local/bin/sync-rag-storage.sh >> /var/log/lightrag-s3-sync.log 2>&1" > /etc/cron.d/lightrag-s3-sync
 chmod 0644 /etc/cron.d/lightrag-s3-sync
 
-# Copy Docker Compose override (750m memory limit + health check)
-cp /opt/lightrag/docker-compose.override.yml /opt/lightrag/docker-compose.override.yml 2>/dev/null || true
+# PERS-03: Docker Compose override (750m memory limit + health check)
+cat > /opt/lightrag/docker-compose.override.yml << 'COMPOSEEOF'
+services:
+  lightrag:
+    restart: unless-stopped
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 750m
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9621/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+COMPOSEEOF
 
 # ─── BOOT-06: Docker Compose Up ────────────────────────────────────────────────
 echo "[BOOT-06] Starting LightRAG containers via Docker Compose..."
@@ -183,7 +241,6 @@ fi
 
 # ─── Bootstrap Complete ─────────────────────────────────────────────────────────
 echo "[BOOT-07] Creating bootstrap flag..."
-mkdir -p /var/lib/lightrag
 echo "$(date -u)" > /var/lib/lightrag/.bootstrapped
 
 echo "=== LightRAG Bootstrap COMPLETE $(date -u) ==="

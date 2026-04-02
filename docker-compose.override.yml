@@ -1,0 +1,24 @@
+# Docker Compose Override for LightRAG
+# Merges with the upstream docker-compose.yml from the LightRAG repo.
+# Place this file in the same directory as docker-compose.yml.
+# Run: docker compose up -d
+
+services:
+  lightrag:
+    restart: unless-stopped
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          # t3.micro has 1GB RAM + 2GB swap. 750m leaves headroom for OS and system services.
+          memory: 750m
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9621/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    environment:
+      # Ensure container binds to all interfaces for external access via EIP
+      HOST: "0.0.0.0"
+      PORT: "9621"

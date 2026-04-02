@@ -1,0 +1,38 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# LightRAG data directories (synced to/from S3)
+rag_storage/
+data/rag_storage/
+data/inputs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+
+# Terraform
+infrastructure/.terraform/
+infrastructure/.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfstate.d/
+
+# Logs
+*.log
+/var/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Playwright
+tests/__pycache__/
+tests/.pytest_cache/
