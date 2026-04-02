@@ -82,7 +82,11 @@ Plans:
 5. .gitignore correctly excludes .env, rag_storage/, terraform/.terraform/, *.tfstate, and __pycache__/.
 6. Project is immediately understandable and reproducible by a DevOps engineer with no additional context.
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md -- README.md with architecture diagram (DOCS-01), SSM setup commands (DOCS-02), cost breakdown (DOCS-03), EIP billing warning (DOCS-04), demo curl script (DOCS-05)
+- [ ] 03-02-PLAN.md -- Audit and verify .gitignore for DOCS-06 compliance
 
 ---
 
@@ -92,7 +96,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. IaC Foundation and EC2 Bootstrap | 1/1 | Not started | - |
 | 2. CI/CD Pipeline and Smoke Testing | 1/1 | Complete    | 2026-04-02 |
-| 3. Documentation and Hardening | 0/1 | Not started | - |
+| 3. Documentation and Hardening | 0/2 | Not started | - |
 
 ---
 
