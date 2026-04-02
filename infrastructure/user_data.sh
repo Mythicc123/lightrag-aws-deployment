@@ -100,33 +100,25 @@ ssm_get_with_retry() {
   return 1
 }
 
-ANTHROPIC_API_KEY=$(ssm_get_with_retry "/lightrag/ANTHROPIC_API_KEY")
 OPENAI_API_KEY=$(ssm_get_with_retry "/lightrag/OPENAI_API_KEY")
 LIGHTRAG_API_KEY=$(ssm_get_with_retry "/lightrag/LIGHTRAG_API_KEY")
 
-if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$OPENAI_API_KEY" ] || [ -z "$LIGHTRAG_API_KEY" ]; then
+if [ -z "$OPENAI_API_KEY" ] || [ -z "$LIGHTRAG_API_KEY" ]; then
   echo "[BOOT-05] WARNING: One or more API keys missing from SSM Parameter Store."
   echo "[BOOT-05] Ensure the following SSM parameters exist:"
-  echo "  - /lightrag/ANTHROPIC_API_KEY"
   echo "  - /lightrag/OPENAI_API_KEY"
   echo "  - /lightrag/LIGHTRAG_API_KEY"
   echo "[BOOT-05] LightRAG will show auth errors but not crash. Fix keys and restart."
 fi
 
 cat > /opt/lightrag/.env << 'ENVEOF'
-ANTHROPIC_API_KEY=ANTHROPIC_API_KEY_PLACEHOLDER
 OPENAI_API_KEY=OPENAI_API_KEY_PLACEHOLDER
 LIGHTRAG_API_KEY=LIGHTRAG_API_KEY_PLACEHOLDER
-MODEL=claude-sonnet-3-7-20250619
-MODEL_LIST=claude-haiku-3-5-20250514
-EMBEDDING_MODEL=text-embedding-3-large
-EMBEDDING_DIM=3072
 HOST=0.0.0.0
 PORT=9621
 ENVEOF
 
 # Replace placeholder tokens with actual SSM-loaded values
-sed -i "s/ANTHROPIC_API_KEY_PLACEHOLDER/$ANTHROPIC_API_KEY/g" /opt/lightrag/.env
 sed -i "s/OPENAI_API_KEY_PLACEHOLDER/$OPENAI_API_KEY/g" /opt/lightrag/.env
 sed -i "s/LIGHTRAG_API_KEY_PLACEHOLDER/$LIGHTRAG_API_KEY/g" /opt/lightrag/.env
 chmod 600 /opt/lightrag/.env
@@ -213,6 +205,17 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+    environment:
+      LLM_BINDING: "openai"
+      LLM_MODEL: "gpt-4o-mini"
+      LLM_BINDING_HOST: "https://api.openai.com/v1"
+      LLM_BINDING_API_KEY: "${OPENAI_API_KEY}"
+      MODEL_LIST: "gpt-4o-mini"
+      EMBEDDING_BINDING: "openai"
+      EMBEDDING_MODEL: "text-embedding-3-large"
+      EMBEDDING_DIM: "3072"
+      EMBEDDING_BINDING_API_KEY: "${OPENAI_API_KEY}"
+      LIGHTRAG_API_KEY: "${LIGHTRAG_API_KEY}"
 COMPOSEEOF
 
 # ─── BOOT-06: Docker Compose Up ────────────────────────────────────────────────
