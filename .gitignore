@@ -21,6 +21,7 @@ infrastructure/.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
 *.tfstate.d/
+infrastructure/terraform.tfvars
 
 # Logs
 *.log
