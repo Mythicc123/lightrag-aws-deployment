@@ -4,6 +4,8 @@ A production-ready deployment of [HKUDS/LightRAG](https://github.com/HKUDS/Light
 
 This project deploys a production-ready LightRAG RAG pipeline on AWS EC2, with Terraform IaC, GitHub Actions CI/CD, and end-to-end smoke tests.
 
+🎬 **Demo available on request** — spins up in ~5 minutes via [GitHub Actions](https://github.com/Mythicc123/lightrag-aws-deployment/actions/workflows/portfolio.yml). Not kept running 24/7 to minimise AWS costs (~$0.01/month at rest).
+
 ## Architecture
 
 ```
@@ -212,7 +214,8 @@ ssh -i ~/.ssh/ec2-static-site-key.pem ubuntu@54.253.108.90 "cat /var/log/lightra
 | S3 Graph Storage | ~1GB/month (light usage) | ~$0.025 USD |
 | SSM Parameter Store | 3 parameters, Standard tier | Free |
 | Data Transfer | Minimal for portfolio demo | ~$0-$1.00 USD |
-| **Total** | | **~$7.50-10/month** |
+| **Total (running)** | | **~$7.50-10/month** |
+| **Total (at rest — destroyed)** | | **~$0.01/month (S3 tfstate only)** |
 
 ### Elastic IP Billing Warning
 
