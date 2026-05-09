@@ -36,25 +36,43 @@ resource "aws_iam_role" "github_actions" {
   }
 }
 
-# Policy: allow read-only AWS access for the deploy workflow
+# Policy: allow GH Actions to provision/destroy lightrag-aws-deployment resources
 resource "aws_iam_policy" "github_actions" {
   name        = "mythicc123-policy"
-  description = "Read-only access for GitHub Actions CI/CD workflow"
+  description = "Allow GH Actions to provision/destroy lightrag-aws-deployment resources"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["ec2:Describe*", "sts:GetCallerIdentity"]
+        Action   = ["ec2:*"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["iam:*"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:*"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["ssm:GetParameter", "ssm:GetParameters", "ssm:DescribeParameters"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["sts:GetCallerIdentity"]
         Resource = "*"
       }
     ]
   })
 
-  tags = {
-    Project = var.project_name
-  }
+  tags = { Project = var.project_name }
 }
 
 resource "aws_iam_role_policy_attachment" "github_actions" {
