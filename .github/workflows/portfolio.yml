@@ -1,0 +1,60 @@
+name: Portfolio
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'apply or destroy'
+        required: true
+        default: 'apply'
+        type: choice
+        options: [apply, destroy]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-southeast-2
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.5"
+
+      - name: Terraform Init
+        run: terraform init -reconfigure -input=false
+
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply'
+        run: terraform apply -auto-approve -input=false
+
+      - name: Terraform Destroy
+        if: github.event.inputs.action == 'destroy'
+        run: |
+          terraform destroy -auto-approve -input=false \
+            -target=aws_instance.lightrag \
+            -target=aws_eip.lightrag \
+            -target=aws_security_group.lightrag \
+            -target=aws_iam_role_policy_attachment.lightrag \
+            -target=aws_iam_policy.lightrag \
+            -target=aws_iam_role.lightrag \
+            -target=aws_iam_instance_profile.lightrag \
+            -target=aws_s3_bucket_lifecycle_configuration.graph_storage \
+            -target=aws_s3_bucket.graph_storage
+
+      - name: Show outputs
+        if: github.event.inputs.action == 'apply'
+        run: terraform output
